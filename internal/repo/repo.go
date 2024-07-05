@@ -6,9 +6,10 @@ import (
 )
 
 type DataBase struct {
-	DB *pg.DB
+	DB     *pg.DB
 	config *config.Repo
 }
+
 func SetConfigs(path string) (*DataBase, error) {
 	config, err := config.NewConfigDB(path)
 	if err != nil {
@@ -16,15 +17,16 @@ func SetConfigs(path string) (*DataBase, error) {
 	}
 	return &DataBase{nil, config}, nil
 }
+
 func (db *DataBase) Close() {
 	db.DB.Close()
-
 }
-func (db *DataBase)ConnectToDataBase(){
+
+func (db *DataBase) ConnectToDataBase() {
 	db.DB = pg.Connect(
 		&pg.Options{
-			User: db.config.User,
+			User:     db.config.User,
 			Password: db.config.Password,
 			Database: db.config.Database,
 		})
-}	
+}

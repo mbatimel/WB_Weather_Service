@@ -1,25 +1,29 @@
 package migrate
 
-import 
-(
-	"github.com/go-pg/pg/orm"
-	"github.com/mbatimel/WB_Weather_Service/internal/repo"
-	"github.com/mbatimel/WB_Weather_Service/internal/model"
+import (
+	"io"
+	"os"
 
+	"github.com/mbatimel/WB_Weather_Service/internal/repo"
 )
 
 
-func CreateSchema(db *repo.DataBase) error {
-	models := []interface{}{
-		(*model.WeatherForecast)(nil),
-		(*model.Cities)(nil),
+func ApplyMigrations(db *repo.DataBase, filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
 	}
-	for _, model := range models {
-		op := orm.CreateTableOptions{}
-		err := db.DB.Model(model).CreateTable(&op)
-		if err != nil {
-			return err
-		}
+	defer file.Close()
+
+	queries, err := io.ReadAll(file)
+	if err != nil {
+		return err
 	}
+
+	_, err = db.DB.Exec(string(queries))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -9,6 +9,7 @@ type Repo struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 }
+
 type ConfigWrapRepo struct {
 	Config Repo `yaml:"repo"`
 }
