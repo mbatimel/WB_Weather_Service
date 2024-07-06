@@ -5,7 +5,7 @@ import (
 	"time"
 )
 type Cities struct{
-	IdCity		int		`json:"city_id"`
+	Id			int		`json:"city_id"`
 	Name		string	`json:"name"`
 	Country		string	`json:"country"`
 	Latitude	float64	`json:"latitude"`
@@ -13,7 +13,7 @@ type Cities struct{
 
 }
 type WeatherForecast struct{
-	Id			int				`json:"id"`
+	Id			int				`json:"weather_id"`
 	IdCity		int				`json:"city_id"`
 	Temp		float64			`json:"temp"`
 	Date		time.Time		`json:"date"`

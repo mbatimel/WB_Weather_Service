@@ -8,11 +8,12 @@ CREATE TABLE cities (
 );
 
 -- Создание таблицы для хранения предсказаний погоды
-CREATE TABLE weather_forecast (
+CREATE TABLE weather_forecasts (
     id SERIAL PRIMARY KEY,
     city_id INT NOT NULL REFERENCES cities(id) ON DELETE CASCADE,
     temp DECIMAL(5, 2) NOT NULL,
     date DATE NOT NULL,
     weather_data JSON NOT NULL,
-    UNIQUE (city_id)
+    UNIQUE (city_id, date)
 );
+

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"net"
 	"net/http"
@@ -23,6 +24,19 @@ type server struct {
 }
 
 func (s *server) Run(ctx context.Context) error{
+	// Initialize cities
+	err := s.db.InitializeCities()
+	if err != nil {
+		return fmt.Errorf("failed to initialize cities: %w", err)
+	}
+
+	// Update weather forecast
+	err = s.db.UpdateWeatherForecast()
+	if err != nil {
+		return fmt.Errorf("failed to update weather forecast: %w", err)
+	}
+	log.Println("init complite")
+	
 	ch:=make(chan error, 1)
 	defer close(ch)
 	go func(){
