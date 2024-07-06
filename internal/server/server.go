@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"net"
 	"net/http"
@@ -21,6 +22,7 @@ type Server interface {
 type server struct {
 	srv *http.Server
 	db *repo.DataBase
+	stopCh  chan struct{}
 }
 
 func (s *server) Run(ctx context.Context) error{
@@ -31,10 +33,8 @@ func (s *server) Run(ctx context.Context) error{
 	}
 
 	// Update weather forecast
-	err = s.db.UpdateWeatherForecast()
-	if err != nil {
-		return fmt.Errorf("failed to update weather forecast: %w", err)
-	}
+	s.stopCh = make(chan struct{})
+	go s.startWeatherUpdateBackgroundProcess()
 	log.Println("init complite")
 	
 	ch:=make(chan error, 1)
@@ -51,6 +51,7 @@ func (s *server) Run(ctx context.Context) error{
 			return fmt.Errorf("failed to listen and serve: %w", err)
 		}
 	case <-ctx.Done():
+		close(s.stopCh)
 		if err:=ctx.Err();err!=nil{
 			return fmt.Errorf("context faild: %w", err)
 		}
@@ -59,7 +60,27 @@ func (s *server) Run(ctx context.Context) error{
 	return nil
 }
 func (s *server) Close() error{
-	return nil
+	close(s.stopCh)
+	return s.srv.Close()
+}
+func (s *server) startWeatherUpdateBackgroundProcess() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.stopCh:
+			log.Println("Stopping background weather update process")
+			return
+		case <-ticker.C:
+			err := s.db.UpdateWeatherForecast()
+			if err != nil {
+				log.Printf("failed to update weather forecast: %v", err)
+			} else {
+				log.Println("Weather forecast updated successfully")
+			}
+		}
+	}
 }
 
 func NewServerConfig(cfg config.Config) (Server, error){
