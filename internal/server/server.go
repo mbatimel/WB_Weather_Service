@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -98,75 +99,76 @@ func NewServerConfig(cfg config.Config) (Server, error){
 		srv :&srv,
 		db : dataBase,
 	}
-	//sv.setupRoutes()
+	sv.setupRoutes()
 	return &sv,nil
 	
 }
 
-// func (s *server)setupRoutes(){
-// 	mx :=http.NewServeMux()
+func (s *server)setupRoutes(){
+	mx :=http.NewServeMux()
 
-// 	mx.HandleFunc("/allCyties",s.handleAllCyties)
-// 	mx.HandleFunc("/hortInfoCity",s.handleHortInfoCity)
-// 	mx.HandleFunc("/fullInfoCity",s.handleFullInfoCity)
-// 	mx.HandleFunc("/favoritCityInfo",s.handleFavoritCityInfo)
+	mx.HandleFunc("/allCyties",s.handleAllCyties)
+	mx.HandleFunc("/hortInfoCity",s.handleHortInfoCity)
+	mx.HandleFunc("/fullInfoCity",s.handleFullInfoCity)
+	// mx.HandleFunc("/favoritCityInfo",s.handleFavoritCityInfo)
 
 
-// 	s.srv.Handler = mx
+	s.srv.Handler = mx
 	
-// }
+}
 
+func (s *server) handleAllCyties(w http.ResponseWriter, r *http.Request) {
+	cities, err := s.db.GetAllCities()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get cities: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-// func (s *server) handleAllCyties(w http.ResponseWriter, r *http.Request) {
-// 	// key := r.URL.Query().Get("key")
-// 	// value := r.URL.Query().Get("value")
-// 	// if key == "" || value == "" {
-// 	// 	http.Error(w, "Missing key or value", http.StatusBadRequest)
-// 	// 	return
-// 	// }
-// 	// s.cache.Add(key, value)
-// 	// w.WriteHeader(http.StatusOK)
-// 	// fmt.Fprintf(w, "Added key %s with value %s", key, value)
-// }
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(cities); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+func (s *server) handleHortInfoCity(w http.ResponseWriter, r *http.Request) {
+	cityName := r.URL.Query().Get("city")
+	if cityName == "" {
+		http.Error(w, "Missing city parameter", http.StatusBadRequest)
+		return
+	}
 
-// func (s *server) handleHortInfoCity(w http.ResponseWriter, r *http.Request) {
-// 	// if err := s.cache.Clear(); err != nil {
-// 	// 	http.Error(w, fmt.Sprintf("Failed to clear cache: %v", err), http.StatusInternalServerError)
-// 	// 	return
-// 	// }
-// 	// w.WriteHeader(http.StatusOK)
-// 	// fmt.Fprintln(w, "Cache cleared")
-// }
+	info, err := s.db.GetShortInfoCity(cityName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get city info: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-// func (s *server) handleFullInfoCity(w http.ResponseWriter, r *http.Request) {
-// 	// key := r.URL.Query().Get("key")
-// 	// value := r.URL.Query().Get("value")
-// 	// ttlStr := r.URL.Query().Get("ttl")
-// 	// if key == "" || value == "" || ttlStr == "" {
-// 	// 	http.Error(w, "Missing key, value or ttl", http.StatusBadRequest)
-// 	// 	return
-// 	// }
-// 	// ttl, err := time.ParseDuration(ttlStr)
-// 	// if err != nil {
-// 	// 	http.Error(w, fmt.Sprintf("Invalid ttl: %v", err), http.StatusBadRequest)
-// 	// 	return
-// 	// }
-// 	// s.cache.AddWithTTL(key, value, ttl)
-// 	// w.WriteHeader(http.StatusOK)
-// 	// fmt.Fprintf(w, "Added key %s with value %s and ttl %s", key, value, ttl)
-// }
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+func (s *server) handleFullInfoCity(w http.ResponseWriter, r *http.Request) {
+	cityName := r.URL.Query().Get("city")
+	dateStr := r.URL.Query().Get("date")
+	if cityName == "" || dateStr == "" {
+		http.Error(w, "Missing city or date parameter", http.StatusBadRequest)
+		return
+	}
 
-// func (s *server) handleFavoritCityInfo(w http.ResponseWriter, r *http.Request) {
-// 	// key := r.URL.Query().Get("key")
-// 	// if key == "" {
-// 	// 	http.Error(w, "Missing key", http.StatusBadRequest)
-// 	// 	return
-// 	// }
-// 	// value, ok := s.cache.Get(key)
-// 	// if !ok {
-// 	// 	http.Error(w, "Key not found", http.StatusNotFound)
-// 	// 	return
-// 	// }
-// 	// w.WriteHeader(http.StatusOK)
-// 	// fmt.Fprintf(w, "Key: %s, Value: %s", key, value)
-// }
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid date format: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	info, err := s.db.GetFullInfoCity(cityName, date)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get city info: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
