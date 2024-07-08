@@ -56,14 +56,14 @@ func (db *DataBase) InitializeCities() error {
 			Longitude: cityData[0]["lon"].(float64),
 		}
 
-		// _, err = db.DB.Exec(`INSERT INTO cities (name, country, latitude, longitude) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, city.Name, city.Country, city.Latitude, city.Longitude)
-		// if err != nil {
-		// 	return fmt.Errorf("failed to insert city %s: %w", city.Name, err)
-		// }
-        _, err = db.DB.Model(&city).Insert()
-        if err != nil {
-            return fmt.Errorf("failed to insert city %s: %w", city.Name, err)
-        }
+		_, err = db.DB.Exec(`INSERT INTO cities (name, country, latitude, longitude) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`, city.Name, city.Country, city.Latitude, city.Longitude)
+		if err != nil {
+			return fmt.Errorf("InitializeCities: failed to insert city %s: %w", city.Name, err)
+		}
+        // _, err = db.DB.Model(&city).Insert()
+        // if err != nil {
+        //     return fmt.Errorf("failed to insert city %s: %w", city.Name, err)
+        // }
     }
 
 
@@ -73,9 +73,10 @@ func (db *DataBase) InitializeCities() error {
 
 func (db *DataBase) UpdateWeatherForecast() error {
 	var cities []model.Cities
-	err := db.DB.Select(&cities)
+	query := `SELECT id, name, country, latitude, longitude FROM cities`
+	_, err := db.DB.Query(&cities, query)
 	if err != nil {
-		return fmt.Errorf("failed to select cities: %w", err)
+		return fmt.Errorf("UpdateWeatherForecast: failed to select cities: %w", err)
 	}
 
 	var wg sync.WaitGroup
@@ -161,41 +162,24 @@ func (db *DataBase) updateWeatherForCity(city model.Cities) error {
 		}
 		log.Println(date)
 
+		// Проверка корректности JSON данных
 		weatherBytes, err := json.Marshal(forecastMap)
 		if err != nil {
 			return fmt.Errorf("failed to marshal weather data: %w", err)
 		}
 
-	// 	query := `
-	// 		INSERT INTO weather_forecasts (city_id, temp, date, weather_data)
-	// 		VALUES ($1, $2, $3, $4)
-	// 		ON CONFLICT (city_id, date) 
-	// 		DO UPDATE SET temp = EXCLUDED.temp, weather_data = EXCLUDED.weather_data;
-	// 	`
-	// 	_, err = db.DB.Exec(query, city.Id, temp, date, weatherBytes)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to insert/update weather data: %w", err)
-	// 	}
-	// }
 
-	// return nil
-    weatherForecast := model.WeatherForecast{
-            IdCity:      city.Id,
-            Temp:        temp,
-            Date:        date,
-            WeatherData: weatherBytes,
-        }
+		query := `
+			INSERT INTO weather_forecasts (city_id, temp, date, weather_data)
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT (city_id, date) 
+			DO UPDATE SET temp = EXCLUDED.temp, weather_data = EXCLUDED.weather_data;
+		`
+		_, err = db.DB.Exec(query, city.Id, temp, date, weatherBytes)
+		if err != nil {
+			return fmt.Errorf("failed to insert/update weather data: %w", err)
+		}
+	}
 
-        _, err = db.DB.Model(&weatherForecast).
-            Table("weather_forecasts").
-            OnConflict("(city_id, date) DO UPDATE").
-            Set("temp = EXCLUDED.temp, weather_data = EXCLUDED.weather_data").
-            Insert()
-        if err != nil {
-            return fmt.Errorf("failed to insert/update weather data: %w", err)
-        }
-    }
-
-    return nil
+	return nil
 }
-
