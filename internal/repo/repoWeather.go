@@ -1,12 +1,14 @@
 package repo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"sync"
+
 	"time"
 
 	"github.com/mbatimel/WB_Weather_Service/internal/model"
@@ -56,130 +58,134 @@ func (db *DataBase) InitializeCities() error {
 			Longitude: cityData[0]["lon"].(float64),
 		}
 
-		_, err = db.DB.Exec(`INSERT INTO cities (name, country, latitude, longitude) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`, city.Name, city.Country, city.Latitude, city.Longitude)
+		query := `INSERT INTO cities (name, country, latitude, longitude) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
+		_, err = db.DB.Exec(context.Background(), query, city.Name, city.Country, city.Latitude, city.Longitude)
 		if err != nil {
 			return fmt.Errorf("InitializeCities: failed to insert city %s: %w", city.Name, err)
 		}
-        // _, err = db.DB.Model(&city).Insert()
-        // if err != nil {
-        //     return fmt.Errorf("failed to insert city %s: %w", city.Name, err)
-        // }
-    }
-
-
+	}
 
 	return nil
 }
-
 func (db *DataBase) UpdateWeatherForecast() error {
-	var cities []model.Cities
-	query := `SELECT id, name, country, latitude, longitude FROM cities`
-	_, err := db.DB.Query(&cities, query)
-	if err != nil {
-		return fmt.Errorf("UpdateWeatherForecast: failed to select cities: %w", err)
-	}
+    var cities []model.Cities
+    query := `SELECT id, name, country, latitude, longitude FROM cities`
+    
+    // Execute the query and scan results into cities slice
+    rows, err := db.DB.Query(context.Background(), query)
+    if err != nil {
+        return fmt.Errorf("UpdateWeatherForecast: failed to select cities: %w", err)
+    }
+    defer rows.Close()
 
-	var wg sync.WaitGroup
-	errCh := make(chan error, len(cities))
-	defer close(errCh)
+    for rows.Next() {
+        var city model.Cities
+        err := rows.Scan(&city.Id, &city.Name, &city.Country, &city.Latitude, &city.Longitude)
+        if err != nil {
+            return fmt.Errorf("UpdateWeatherForecast: failed to scan city row: %w", err)
+        }
+        cities = append(cities, city)
+    }
+    if err := rows.Err(); err != nil {
+        return fmt.Errorf("UpdateWeatherForecast: error iterating over city rows: %w", err)
+    }
 
-	for _, city := range cities {
-		wg.Add(1)
-		go func(city model.Cities) {
-			defer wg.Done()
-			if err := db.updateWeatherForCity(city); err != nil {
-				errCh <- fmt.Errorf("failed to update weather for city %s: %v", city.Name, err)
-			}
-		}(city)
-	}
+    var wg sync.WaitGroup
+    errCh := make(chan error, len(cities))
+    defer close(errCh)
 
-	wg.Wait()
+    for _, city := range cities {
+        wg.Add(1)
+        go func(city model.Cities) {
+            defer wg.Done()
+            if err := db.updateWeatherForCity(city); err != nil {
+                errCh <- fmt.Errorf("failed to update weather for city %s: %v", city.Name, err)
+            }
+        }(city)
+    }
 
-	select {
-	case err := <-errCh:
-		return err
-	default:
-		return nil
-	}
+    wg.Wait()
+
+    select {
+    case err := <-errCh:
+        return err
+    default:
+        return nil
+    }
 }
 
 func (db *DataBase) updateWeatherForCity(city model.Cities) error {
-	url := fmt.Sprintf("%s?lat=%f&lon=%f&appid=%s", openWeatherAPIURL, city.Latitude, city.Longitude, openWeatherAPIKey)
-	log.Println("Fetching weather data from:", url)
+    url := fmt.Sprintf("%s?lat=%f&lon=%f&appid=%s", openWeatherAPIURL, city.Latitude, city.Longitude, openWeatherAPIKey)
+    log.Println("Fetching weather data from:", url)
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to fetch weather data: %w", err)
-	}
-	defer resp.Body.Close()
+    resp, err := http.Get(url)
+    if err != nil {
+        return fmt.Errorf("failed to fetch weather data: %w", err)
+    }
+    defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+    }
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return fmt.Errorf("failed to read response body: %w", err)
+    }
 
-	weatherData := make(map[string]interface{})
-	err = json.Unmarshal(body, &weatherData)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal weather data: %w", err)
-	}
+    weatherData := make(map[string]interface{})
+    err = json.Unmarshal(body, &weatherData)
+    if err != nil {
+        return fmt.Errorf("failed to unmarshal weather data: %w", err)
+    }
 
-	forecastList, ok := weatherData["list"].([]interface{})
-	if !ok {
-		return fmt.Errorf("unexpected format for weather data")
-	}
+    forecastList, ok := weatherData["list"].([]interface{})
+    if !ok {
+        return fmt.Errorf("unexpected format for weather data")
+    }
 
-	for _, forecast := range forecastList {
-		forecastMap, ok := forecast.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected format for forecast map")
-		}
+    for _, forecast := range forecastList {
+        forecastMap, ok := forecast.(map[string]interface{})
+        if !ok {
+            return fmt.Errorf("unexpected format for forecast map")
+        }
 
-		mainData, ok := forecastMap["main"].(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected format for main data")
-		}
+        mainData, ok := forecastMap["main"].(map[string]interface{})
+        if !ok {
+            return fmt.Errorf("unexpected format for main data")
+        }
 
-		forecastTime, ok := forecastMap["dt_txt"].(string)
-		if !ok {
-			return fmt.Errorf("unexpected format for forecast time")
-		}
-		log.Println(forecastTime)
+        forecastTime, ok := forecastMap["dt_txt"].(string)
+        if !ok {
+            return fmt.Errorf("unexpected format for forecast time")
+        }
 
-		temp, ok := mainData["temp"].(float64)
-		if !ok {
-			return fmt.Errorf("unexpected format for temperature")
-		}
-		log.Println(temp)
+        temp, ok := mainData["temp"].(float64)
+        if !ok {
+            return fmt.Errorf("unexpected format for temperature")
+        }
 
-		date, err := time.Parse("2006-01-02 15:04:05", forecastTime)
-		if err != nil {
-			return fmt.Errorf("failed to parse date: %w", err)
-		}
-		log.Println(date)
+        date, err := time.Parse("2006-01-02 15:04:05", forecastTime)
+        if err != nil {
+            return fmt.Errorf("failed to parse date: %w", err)
+        }
 
-		// Проверка корректности JSON данных
-		weatherBytes, err := json.Marshal(forecastMap)
-		if err != nil {
-			return fmt.Errorf("failed to marshal weather data: %w", err)
-		}
+        weatherBytes, err := json.Marshal(forecastMap)
+        if err != nil {
+            return fmt.Errorf("failed to marshal weather data: %w", err)
+        }
 
+        query := `
+            INSERT INTO weather_forecasts (city_id, temp, date, weather_data)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (city_id, date) 
+            DO UPDATE SET temp = EXCLUDED.temp, weather_data = EXCLUDED.weather_data;
+        `
+        _, err = db.DB.Exec(context.Background(), query, city.Id, temp, date, weatherBytes)
+        if err != nil {
+            return fmt.Errorf("failed to insert/update weather data: %w", err)
+        }
+    }
 
-		query := `
-			INSERT INTO weather_forecasts (city_id, temp, date, weather_data)
-			VALUES (?, ?, ?, ?)
-			ON CONFLICT (city_id, date) 
-			DO UPDATE SET temp = EXCLUDED.temp, weather_data = EXCLUDED.weather_data;
-		`
-		_, err = db.DB.Exec(query, city.Id, temp, date, weatherBytes)
-		if err != nil {
-			return fmt.Errorf("failed to insert/update weather data: %w", err)
-		}
-	}
-
-	return nil
+    return nil
 }

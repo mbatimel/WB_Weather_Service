@@ -6,3 +6,5 @@ repo:
     database: WB_developer
     user: mbatimel
     password: wb_il
+    host: "localhost"
+    port: "5432"

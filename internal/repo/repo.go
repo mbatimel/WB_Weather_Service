@@ -1,14 +1,16 @@
 package repo
 
 import (
-	"github.com/go-pg/pg"
+	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v4"
 	"github.com/mbatimel/WB_Weather_Service/internal/config"
 )
 
 type DataBase struct {
-	DB     *pg.DB
+	DB     *pgx.Conn
 	config *config.Repo
-
 }
 
 func SetConfigs(path string) (*DataBase, error) {
@@ -20,14 +22,17 @@ func SetConfigs(path string) (*DataBase, error) {
 }
 
 func (db *DataBase) Close() {
-	db.DB.Close()
+	if db.DB != nil {
+		db.DB.Close(context.Background())
+	}
 }
 
-func (db *DataBase) ConnectToDataBase() {
-	db.DB = pg.Connect(
-		&pg.Options{
-			User:     db.config.User,
-			Password: db.config.Password,
-			Database: db.config.Database,
-		})
+func (db *DataBase) ConnectToDataBase() error {
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", db.config.User, db.config.Password, db.config.Host, db.config.Port, db.config.Database)
+    conn, err := pgx.Connect(context.Background(), connStr)
+    if err!=nil{
+        return err
+    }
+	db.DB = conn
+    return nil
 }

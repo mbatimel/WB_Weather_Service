@@ -9,13 +9,22 @@ import (
 
 func main() {
 	db, err := repo.SetConfigs("config/config.yaml")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	db.ConnectToDataBase()
-	defer db.Close()
+    if err != nil {
+        log.Fatalf("Error setting up database: %v", err)
+    }
+    defer db.Close()
 
-	if err := migrate.ApplyMigrations(db, "migrations/migrate.sql"); err != nil {
-		log.Fatalln(err)
-	}
+    err = db.ConnectToDataBase()
+    if err != nil {
+        log.Fatalf("Error connecting to database: %v", err)
+    }
+
+    // Example migration application
+    err = migrate.ApplyMigrations(db, "migrations/migrate.sql")
+    if err != nil {
+        log.Fatalf("Error applying migrations: %v", err)
+    }
+
+    log.Println("Migrations applied successfully!")
+
 }
