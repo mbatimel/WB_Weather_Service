@@ -15,7 +15,7 @@ import (
 const (
 	geocodingAPIURL   = "http://api.openweathermap.org/geo/1.0/direct"
 	openWeatherAPIURL = "https://api.openweathermap.org/data/2.5/forecast"
-	openWeatherAPIKey = "api"
+	openWeatherAPIKey = "ea97a3b324b49ab2208278142513501d"
 )
 
 func (db *DataBase) InitializeCities() error {
@@ -198,3 +198,4 @@ func (db *DataBase) updateWeatherForCity(city model.Cities) error {
 
     return nil
 }
+

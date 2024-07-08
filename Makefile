@@ -8,10 +8,6 @@ migration:
 	go build -v ./cmd/migration
 	./migration
 
-.PHONY: publisher
-publisher:
-	go build -v ./cmd/publisher
-
 .PHONY: up
 up:
 	docker-compose up -d

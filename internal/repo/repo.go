@@ -8,6 +8,7 @@ import (
 type DataBase struct {
 	DB     *pg.DB
 	config *config.Repo
+
 }
 
 func SetConfigs(path string) (*DataBase, error) {
