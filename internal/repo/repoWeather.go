@@ -21,7 +21,7 @@ const (
 )
 
 func (db *DataBase) InitializeCities() error {
-	cityNames := []string{"London", "Paris", "Berlin", "New York", "Tokyo"}
+	cityNames := []string{"London", "Paris", "Berlin", "New York", "Tokyo","Moscow","Saint-Petersburg", "Kazan", "Chelyabinsk", "Novosibirsk","Ekaterinburg","Samara","Omsk","Edinburgh","Cardiff","Belfast","Glasgow", "Manchester","Liverpool","Oslo"}
 
 	for _, cityName := range cityNames {
 		url := fmt.Sprintf("%s?q=%s&limit=1&appid=%s", geocodingAPIURL, cityName, openWeatherAPIKey)
@@ -57,12 +57,18 @@ func (db *DataBase) InitializeCities() error {
 			Latitude:  cityData[0]["lat"].(float64),
 			Longitude: cityData[0]["lon"].(float64),
 		}
-
-		query := `INSERT INTO cities (name, country, latitude, longitude) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
-		_, err = db.DB.Exec(context.Background(), query, city.Name, city.Country, city.Latitude, city.Longitude)
-		if err != nil {
-			return fmt.Errorf("InitializeCities: failed to insert city %s: %w", city.Name, err)
-		}
+        var exists bool
+        err = db.DB.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM cities WHERE name=$1)", cityName).Scan(&exists)
+        if err != nil {
+            return err
+        }
+            if !exists {
+            query := `INSERT INTO cities (name, country, latitude, longitude) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
+            _, err = db.DB.Exec(context.Background(), query, city.Name, city.Country, city.Latitude, city.Longitude)
+            if err != nil {
+                return fmt.Errorf("InitializeCities: failed to insert city %s: %w", city.Name, err)
+            }
+        }
 	}
 
 	return nil

@@ -11,7 +11,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code into the container
-COPY . .
+COPY ./ ./
 
 # Build the Go app
 RUN go build -o ./migration ./cmd/migration/main.go
@@ -27,21 +27,12 @@ ENV POSTGRES_PASSWORD=wb_il
 ENV POSTGRES_HOST=postgres
 ENV POSTGRES_PORT=5432
 
-# Create a directory for the app
-WORKDIR /app
-
 # Copy the pre-built binary files from the previous stage
 COPY --from=build /app/migration .
 COPY --from=build /app/server .
-
-# Copy the entrypoint script
-COPY entrypoint.sh .
-
-# Make the entrypoint script executable
-RUN chmod +x entrypoint.sh
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Run the entrypoint script
-CMD ["./entrypoint.sh"]
+CMD ["./migration", "./server"]
