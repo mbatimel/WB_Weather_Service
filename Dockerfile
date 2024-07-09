@@ -1,5 +1,5 @@
 # Use the official Golang image as the build stage
-FROM golang:latest AS build
+FROM golang:latest AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -11,7 +11,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code into the container
-COPY ./ ./
+COPY . .
 
 # Build the Go app
 RUN go build -o ./migration ./cmd/migration/main.go
@@ -27,12 +27,17 @@ ENV POSTGRES_PASSWORD=wb_il
 ENV POSTGRES_HOST=postgres
 ENV POSTGRES_PORT=5432
 
-# Copy the pre-built binary files from the previous stage
-COPY --from=build /app/migration .
-COPY --from=build /app/server .
-
 # Expose the port the app runs on
 EXPOSE 8080
 
+WORKDIR /app
+
+# Copy the pre-built binary files from the previous stage
+COPY --from=builder /app/migration .
+COPY --from=builder /app/server .
+
+CMD ["./app/migration"]
 # Run the entrypoint script
-CMD ["./migration", "./server"]
+# CMD [ "sleep", "1h" ]
+# CMD ["./migration"]
+# CMD ["ls"]

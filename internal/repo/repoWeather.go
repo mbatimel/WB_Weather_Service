@@ -100,8 +100,8 @@ func (db *DataBase) UpdateWeatherForecast() error {
     errCh := make(chan error, len(cities))
     defer close(errCh)
 
+	wg.Add(len(cities))
     for _, city := range cities {
-        wg.Add(1)
         go func(city model.Cities) {
             defer wg.Done()
             if err := db.updateWeatherForCity(city); err != nil {

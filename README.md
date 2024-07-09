@@ -91,12 +91,26 @@ docker-compose exec app ./migration
 
 ```json
 [
+  "Belfast",
   "Berlin",
+  "Cardiff",
+  "Chelyabinsk",
+  "Edinburgh",
+  "Ekaterinburg",
+  "Glasgow",
+  "Kazan",
+  "Liverpool",
   "London",
+  "Manchester",
+  "Moscow",
   "New York",
+  "Novosibirsk",
+  "Omsk","Oslo",
   "Paris",
+  "Saint-Petersburg",
+  "Samara",
   "Tokyo"
-]
+  ]
 ```
 
 ### Краткая информация о городе
@@ -119,15 +133,15 @@ GET /hortInfoCity?city=London
 **Пример ответа**:
 
 ```json
-{
-  "country": "GB",
-  "city": "London",
-  "avg_temp": 15.5,
-  "available_dates": [
-    "2024-07-10",
-    "2024-07-11",
-    "2024-07-12"
-  ]
+{"available_dates":[
+  "2024-07-10",
+  "2024-07-11",
+  "2024-07-12",
+  "2024-07-13",
+  "2024-07-14"],
+  "avg_temp":294.078,
+  "city":"Berlin",
+  "country":"DE"
 }
 ```
 
@@ -152,28 +166,36 @@ GET /fullInfoCity?city=London&date=2024-07-10
 **Пример ответа**:
 
 ```json
-{
-  "country": "GB",
-  "city": "London",
-  "date": "2024-07-10T00:00:00Z",
-  "temp": 15.5,
-  "weather_data": {
-    "main": {
-      "temp": 15.5,
-      "feels_like": 14.8,
-      "temp_min": 14.0,
-      "temp_max": 17.0,
-      "pressure": 1012,
-      "humidity": 82
-    },
-    "weather": [
-      {
-        "description": "облачно",
-        "icon": "04d"
-      }
-    ]
-  }
-}
+ "city":"London",
+  "country":"GB",
+  "date":"2024-07-10T00:00:00Z",
+  "temp":288.62,
+  "weather_data":{
+    "clouds":{"all":59},
+    "dt":1720645200,
+    "dt_txt":"2024-07-10 21:00:00",
+    "main":{
+      "feels_like":288.08,
+      "grnd_level":1013,
+      "humidity":71,
+      "pressure":1017,
+      "sea_level":1017,
+      "temp":288.62,
+      "temp_kf":0,
+      "temp_max":288.62,
+      "temp_min":288.62
+      },
+      "pop":0,
+      "sys":{
+        "pod":"n"
+        },
+      "visibility":10000,
+      "weather":[{
+        "description":"broken clouds",
+        "icon":"04n",
+        "id":803,
+        "main":"Clouds"}],
+      "wind":{"deg":259,"gust":7.78,"speed":3.61}}
 ```
 ### Добавление пользователя
 **URL**: `/addNewUser?person={username}&password={pswd}`
@@ -240,6 +262,55 @@ GET /favoritCityInfo?person=Mbatimel&password=1234
 **Пример ответа**:
 
 ```json
-
+{
+  "cities": [
+        {
+            "country": "RU",
+            "latitude": 55.7504461,
+            "longitude": 37.6174943,
+            "name": "Moscow",
+            "weather": {
+                "date": "2024-07-10",
+                "temp": 291.42,
+                "weather_data": {
+                    "clouds": {
+                        "all": 2
+                    },
+                    "dt": 1720645200,
+                    "dt_txt": "2024-07-10 21:00:00",
+                    "main": {
+                        "feels_like": 290.9,
+                        "grnd_level": 1007,
+                        "humidity": 61,
+                        "pressure": 1025,
+                        "sea_level": 1025,
+                        "temp": 291.42,
+                        "temp_kf": 0,
+                        "temp_max": 291.42,
+                        "temp_min": 291.42
+                    },
+                    "pop": 0,
+                    "sys": {
+                        "pod": "n"
+                    },
+                    "visibility": 10000,
+                    "weather": [
+                        {
+                            "description": "clear sky",
+                            "icon": "01n",
+                            "id": 800,
+                            "main": "Clear"
+                        }
+                    ],
+                    "wind": {
+                        "deg": 50,
+                        "gust": 3.08,
+                        "speed": 1.77
+                    }
+                }
+            }
+        }
+  ]
+}
 ```
 # КОНЕЦ!!! А КТО ЧИТАЛ, МОЛОДЕЦ!!!!

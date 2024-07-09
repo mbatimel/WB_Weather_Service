@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,7 +61,7 @@ func (db *DataBase) AddCityInFavorit(cityName, personName, personPswd string) er
 }
 
 func (db *DataBase) GetCityInFavorit(personName, personPswd string) (map[string]interface{}, error) {
-	// Проверка существования пользователя и пароля
+	// Check if the user exists and verify the password
 	var personID int
 	var hashedPassword string
 	err := db.DB.QueryRow(context.Background(), "SELECT id, password FROM persons WHERE name=$1", personName).Scan(&personID, &hashedPassword)
@@ -67,14 +69,27 @@ func (db *DataBase) GetCityInFavorit(personName, personPswd string) (map[string]
 		return nil, err
 	}
 
-	// Проверка пароля
+	// Check the password
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(personPswd))
 	if err != nil {
 		return nil, err
 	}
 
-	// Получение списка избранных городов
-	rows, err := db.DB.Query(context.Background(), "SELECT c.name, c.country, c.latitude, c.longitude FROM favorite_cities fc JOIN cities c ON fc.city_id = c.id WHERE fc.person_id = $1", personID)
+	// Get the list of favorite cities along with weather forecast
+	query := `
+		SELECT 
+			c.name, c.country, c.latitude, c.longitude,
+			wf.temp, wf.date, wf.weather_data
+		FROM 
+			favorite_cities fc
+		JOIN 
+			cities c ON fc.city_id = c.id
+		LEFT JOIN 
+			weather_forecasts wf ON c.id = wf.city_id
+		WHERE 
+			fc.person_id = $1
+	`
+	rows, err := db.DB.Query(context.Background(), query, personID)
 	if err != nil {
 		return nil, err
 	}
@@ -83,15 +98,29 @@ func (db *DataBase) GetCityInFavorit(personName, personPswd string) (map[string]
 	cities := make([]map[string]interface{}, 0)
 	for rows.Next() {
 		var name, country string
-		var latitude, longitude float64
-		if err := rows.Scan(&name, &country, &latitude, &longitude); err != nil {
+		var latitude, longitude, temp float64
+		var date time.Time
+		var weatherData []byte
+
+		if err := rows.Scan(&name, &country, &latitude, &longitude, &temp, &date, &weatherData); err != nil {
 			return nil, err
 		}
+
+		weather := make(map[string]interface{})
+		if err := json.Unmarshal(weatherData, &weather); err != nil {
+			return nil, err
+		}
+
 		city := map[string]interface{}{
 			"name":      name,
 			"country":   country,
 			"latitude":  latitude,
 			"longitude": longitude,
+			"weather": map[string]interface{}{
+				"temp":         temp,
+				"date":         date.Format("2006-01-02"),
+				"weather_data": weather,
+			},
 		}
 		cities = append(cities, city)
 	}
