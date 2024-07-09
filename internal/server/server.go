@@ -61,7 +61,7 @@ func (s *server) Run(ctx context.Context) error{
 	return nil
 }
 func (s *server) Close() error{
-	s.db.DB.Close(context.Background())
+	s.db.DB.Close()
 	close(s.stopCh)
 	return s.srv.Close()
 }
