@@ -14,8 +14,8 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o ./migration ./cmd/migration/main.go
-RUN go build -o ./server ./cmd/server/main.go
+RUN go build -o /app/migration ./cmd/migration/main.go
+RUN go build -o /app/server ./cmd/server/main.go
 
 # Start a new stage from scratch
 FROM alpine:latest
@@ -33,11 +33,12 @@ EXPOSE 8080
 WORKDIR /app
 
 # Copy the pre-built binary files from the previous stage
-COPY --from=builder /app/migration .
-COPY --from=builder /app/server .
+COPY --from=builder /app/migration /app/migration
+COPY --from=builder /app/server /app/server
 
-CMD ["./app/migration"]
-# Run the entrypoint script
-# CMD [ "sleep", "1h" ]
-# CMD ["./migration"]
-# CMD ["ls"]
+# Ensure the binary has execution permissions
+RUN chmod +x /app/migration
+RUN chmod +x /app/server
+
+# Run the migration script by default
+CMD ["sleep", "1h"]

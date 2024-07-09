@@ -13,6 +13,7 @@ import (
 
 	"github.com/mbatimel/WB_Weather_Service/internal/config"
 	"github.com/mbatimel/WB_Weather_Service/internal/repo"
+	"github.com/mbatimel/WB_Weather_Service/internal/migrate"
 )
 var ErrChannelClosed = errors.New("channel is closed")
 type Server interface {
@@ -95,7 +96,12 @@ func NewServerConfig(cfg config.Config) (Server, error){
 	}
 	dataBase.ConnectToDataBase()
 	
-	
+	err = migrate.ApplyMigrations(dataBase, "migrations/migrate.sql")
+    if err != nil {
+        log.Fatalf("Error applying migrations: %v", err)
+    }
+
+    log.Println("Migrations applied successfully!")
 	sv:=server{
 		srv :&srv,
 		db : dataBase,
