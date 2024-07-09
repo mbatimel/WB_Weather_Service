@@ -175,23 +175,71 @@ GET /fullInfoCity?city=London&date=2024-07-10
   }
 }
 ```
+### Добавление пользователя
+**URL**: `/addNewUser?person={username}&password={pswd}`
 
-## Примеры запросов
+**Метод**: ADD
 
-### Получение списка всех городов
+**Параметры**:
+- `person`: Инкнейм пользователя в системе.
+- `password`: Пароль(хэшируется).
 
-```bash
-curl -X GET http://localhost:8080/allCyties
+**Описание**: Добавляет пользователя в базу данных
+
+**Пример запроса**:
+
+```http
+ADD /addNewUser?person=Mbatimel&password=1234
 ```
 
-### Получение краткой информации о городе
+**Пример ответа**:
 
-```bash
-curl -X GET "http://localhost:8080/hortInfoCity?city=London"
+```json
+"User created successfully"
+```
+### Добавление города в избранные у пользователя
+**URL**: `/addCityToFuvorites?person={username}&password={pswd}&city={city}`
+
+**Метод**: ADD
+
+**Параметры**:
+- `city`: Название города.
+- `person`: Инкнейм пользователя в системе.
+- `password`: Пароль(хэшируется).
+
+**Описание**: Добавляет город в избранные у пользователя.
+
+**Пример запроса**:
+
+```http
+ADD /addCityToFuvorites?person=Mbatimel&password=1234&city=Berlin
 ```
 
-### Получение полной информации о погоде в городе
+**Пример ответа**:
 
-```bash
-curl -X GET "http://localhost:8080/fullInfoCity?city=London&date=2024-07-10"
+```json
+"Added successfully"
 ```
+### Полная информация об избранных городах
+**URL**: `/favoritCityInfo?person={username}&password={pswd}`
+
+**Метод**: GET
+
+**Параметры**:
+- `person`: Инкнейм пользователя в системе.
+- `password`: Пароль(хэшируется).
+
+**Описание**: Возвращает полную информацию по городам, которые находятся в избранных у пользователя
+
+**Пример запроса**:
+
+```http
+GET /favoritCityInfo?person=Mbatimel&password=1234
+```
+
+**Пример ответа**:
+
+```json
+
+```
+# КОНЕЦ!!! А КТО ЧИТАЛ, МОЛОДЕЦ!!!!
