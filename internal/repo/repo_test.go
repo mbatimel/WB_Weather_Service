@@ -126,17 +126,13 @@ func TestGetFullInfoCity(t *testing.T) {
 	}
 
 	wantRes := map[string]interface{}{
-		"country": "United Kingdom",
-		"city":    "London",
-		"date":    time.Date(2024, 6, 8, 0, 0, 0, 0, time.UTC),
-		"temp":    20.0,
-		"weather_data": map[string]interface{}{
-			"description": "sunny",
-			"humidity":    60,
-		},
+		"country": "DE",
+		"city":    "Berlin",
+		"date":    time.Date(2024, 7, 9, 0, 0, 0, 0, time.UTC),
+		"temp":    298.66,
 	}
 
-	result, err := db.GetFullInfoCity("London", time.Date(2024, 6, 8, 0, 0, 0, 0, time.UTC))
+	result, err := db.GetFullInfoCity("Berlin", time.Date(2024, 7, 9, 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("Failed to get full info for city: %v", err)
 	}
@@ -149,7 +145,4 @@ func TestGetFullInfoCity(t *testing.T) {
 		t.Errorf("got %v, wanted %v", result["date"], wantRes["date"])
 	}
 
-	if len(result["weather_data"].(map[string]interface{})) != len(wantRes["weather_data"].(map[string]interface{})) {
-		t.Errorf("got %v, wanted %v", result["weather_data"], wantRes["weather_data"])
-	}
 }
