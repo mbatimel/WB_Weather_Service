@@ -20,3 +20,9 @@ type WeatherForecast struct{
 	WeatherData			json.RawMessage			`json:"weather_data"`
 }
 
+type Person struct{
+	Id			int			`json:"person_id"`
+	Name 		string		`json:"person_name"`
+	Password	string		`json:"password"`
+	IdCity		[]int		`json:"city_id"`
+}

@@ -111,7 +111,9 @@ func (s *server)setupRoutes(){
 	mx.HandleFunc("/allCyties",s.handleAllCyties)
 	mx.HandleFunc("/hortInfoCity",s.handleHortInfoCity)
 	mx.HandleFunc("/fullInfoCity",s.handleFullInfoCity)
-	// mx.HandleFunc("/favoritCityInfo",s.handleFavoritCityInfo)
+	mx.HandleFunc("/addCityToFuvorites",s.handleAddCityToFavorites)
+	mx.HandleFunc("/favoritCityInfo",s.handleFavoritCityInfo)
+	mx.HandleFunc("/addNewUser",s.handleAddUser)
 
 
 	s.srv.Handler = mx
@@ -185,4 +187,78 @@ func (s *server) handleFullInfoCity(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to encode response: %v", err)
 	}
 	log.Println("handleFullInfoCity status OK")
+}
+func (s *server) handleAddCityToFavorites(w http.ResponseWriter, r *http.Request) {
+	personName := r.URL.Query().Get("person")
+	cityName := r.URL.Query().Get("city")
+	personPswd := r.URL.Query().Get("password")
+	if cityName == "" || personName == "" || personPswd == "" {
+		http.Error(w, "Missing city or person parameter", http.StatusBadRequest)
+		log.Println("Missing city or person parameter")
+		return
+	}
+	err := s.db.AddCityInFavorit(cityName, personName, personPswd)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed add city in favorites: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed add city in favorites: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode("Added successfully"); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to encode response: %v", err)
+	}
+	log.Println("handleAddCityToFavorites status OK")
+}
+
+func (s *server) handleFavoritCityInfo(w http.ResponseWriter, r *http.Request) {
+	personName := r.URL.Query().Get("person")
+	personPswd := r.URL.Query().Get("password")
+	if personName == "" || personPswd == "" {
+		http.Error(w, "Missing person or password parameter", http.StatusBadRequest)
+		log.Println("Missing person and password parameter")
+		return
+	}
+	info, err := s.db.GetCityInFavorit(personName, personPswd)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed get favorite cities: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed get favorite cities: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to encode response: %v", err)
+	}
+	log.Println("handleFavoritCityInfo status OK")
+}
+func (s *server) handleAddUser(w http.ResponseWriter, r *http.Request) {
+	personName := r.URL.Query().Get("person")
+	personPswd := r.URL.Query().Get("password")
+	if personName == "" || personPswd == "" {
+		http.Error(w, "Missing person or password parameter", http.StatusBadRequest)
+		log.Println("Missing person or password parameter")
+		return
+	}
+
+	err := s.db.AddUser(personName, personPswd)
+	if err != nil {
+		if err.Error() == "user already exists" {
+			http.Error(w, "User already exists", http.StatusConflict)
+			log.Println("User already exists")
+		} else {
+			http.Error(w, fmt.Sprintf("Failed to create user: %v", err), http.StatusInternalServerError)
+			log.Printf("Failed to create user: %v", err)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode("User created successfully"); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to encode response: %v", err)
+	}
+	log.Println("handleAddUser status OK")
 }
