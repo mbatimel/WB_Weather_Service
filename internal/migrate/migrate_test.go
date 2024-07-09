@@ -5,7 +5,7 @@ import ("testing"
 )
 
 func TestApplyMigrations(t *testing.T) {
-	db, err := repo.SetConfigs("config/config.yaml")
+	db, err := repo.SetConfigs("../../config/config.yaml")
 	want :=error(nil)
     if err != nil {
 		t.Errorf("got %q, wanted %q", err, want)
@@ -18,7 +18,7 @@ func TestApplyMigrations(t *testing.T) {
     }
 
     // Example migration application
-    err = ApplyMigrations(db, "migrations/migrate.sql")
+    err = ApplyMigrations(db, "../../migrations/migrate.sql")
     if err != nil {
 		t.Errorf("got %q, wanted %q", err, want)
     }

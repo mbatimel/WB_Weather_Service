@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"time"
-
 )
 
 // GetAllCities retrieves a list of all cities sorted by name.
@@ -46,7 +45,7 @@ func (db *DataBase) GetShortInfoCity(cityName string) (map[string]interface{}, e
 			c.country, 
 			c.name AS city, 
 			AVG(w.temp) AS avg_temp, 
-			array_agg(w.date ORDER BY w.date) AS available_dates
+			array_agg(w.date::text ORDER BY w.date) AS available_dates
 		FROM 
 			cities c
 		JOIN 
@@ -69,6 +68,7 @@ func (db *DataBase) GetShortInfoCity(cityName string) (map[string]interface{}, e
 		"available_dates": result.AvailableDates,
 	}, nil
 }
+
 
 
 // GetFullInfoCity retrieves full weather info for a given city and date.
