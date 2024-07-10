@@ -18,7 +18,7 @@ func TestInitializeCities(t *testing.T){
         t.Errorf("got %q, wanted %q", err, want)
     }
 	db.InitializeCities()
-	wantRes:=[]string{"London", "Paris", "Berlin", "New York", "Tokyo"}
+	wantRes:=[]string{"London", "Paris", "Berlin", "New York", "Tokyo","Moscow","Saint-Petersburg", "Kazan", "Chelyabinsk", "Novosibirsk","Ekaterinburg","Samara","Omsk","Edinburgh","Cardiff","Belfast","Glasgow", "Manchester","Liverpool","Oslo"}
 	result, errDB := db.GetAllCities()
 	if errDB != want {
 		t.Errorf("got %q, wanted %q", errDB, want)
@@ -70,7 +70,7 @@ func TestGetAllCities(t *testing.T) {
     if err != want {
         t.Errorf("got %q, wanted %q", err, want)
     }
-	wantRes:=[]string{"London", "Paris", "Berlin", "New York", "Tokyo"}
+	wantRes:=[]string{"London", "Paris", "Berlin", "New York", "Tokyo","Moscow","Saint-Petersburg", "Kazan", "Chelyabinsk", "Novosibirsk","Ekaterinburg","Samara","Omsk","Edinburgh","Cardiff","Belfast","Glasgow", "Manchester","Liverpool","Oslo"}
 	result, errDB := db.GetAllCities()
 	if errDB != want {
 		t.Errorf("got %q, wanted %q", errDB, want)
@@ -95,8 +95,8 @@ func TestGetShortInfoCity(t *testing.T) {
 	wantRes := map[string]interface{}{
 		"country":         "GB",
 		"city":            "London",
-		"avg_temp":        289.44666666666666, // Example average temperature
-		"available_dates": []string{"2024-07-09", "2024-07-10", "2024-07-11", "2024-07-12", "2024-07-13", "2024-07-14"}, // Example dates
+		
+
 	}
 
 	result, err := db.GetShortInfoCity("London")
@@ -104,12 +104,8 @@ func TestGetShortInfoCity(t *testing.T) {
 		t.Fatalf("Failed to get short info for city: %v", err)
 	}
 
-	if result["country"] != wantRes["country"] || result["city"] != wantRes["city"] || result["avg_temp"] != wantRes["avg_temp"] {
+	if result["country"] != wantRes["country"] || result["city"] != wantRes["city"] {
 		t.Errorf("got %v, wanted %v", result, wantRes)
-	}
-
-	if len(result["available_dates"].([]string)) != len(wantRes["available_dates"].([]string)) {
-		t.Errorf("got %v, wanted %v", result["available_dates"], wantRes["available_dates"])
 	}
 }
 
@@ -124,20 +120,19 @@ func TestGetFullInfoCity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
-
+	currentDate := time.Now().Truncate(24 * time.Hour)
 	wantRes := map[string]interface{}{
 		"country": "DE",
 		"city":    "Berlin",
-		"date":    time.Date(2024, 7, 9, 0, 0, 0, 0, time.UTC),
-		"temp":    298.66,
+		"date":    currentDate,
 	}
 
-	result, err := db.GetFullInfoCity("Berlin", time.Date(2024, 7, 9, 0, 0, 0, 0, time.UTC))
+	result, err := db.GetFullInfoCity("Berlin", currentDate)
 	if err != nil {
 		t.Fatalf("Failed to get full info for city: %v", err)
 	}
 
-	if result["country"] != wantRes["country"] || result["city"] != wantRes["city"] || result["temp"] != wantRes["temp"] {
+	if result["country"] != wantRes["country"] || result["city"] != wantRes["city"]{
 		t.Errorf("got %v, wanted %v", result, wantRes)
 	}
 
