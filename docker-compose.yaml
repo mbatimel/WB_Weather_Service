@@ -22,7 +22,7 @@ services:
       POSTGRES_DB: "WB_developer"
       POSTGRES_USER: "mbatimel"
       POSTGRES_PASSWORD: "wb_il"
-      POSTGRES_HOST: "postgres"
+      POSTGRES_HOST: "localhost"
       POSTGRES_PORT: "5432"
 
 volumes:
