@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mbatimel/WB_Weather_Service/internal/config"
 )
 
@@ -30,7 +30,7 @@ func (db *DataBase) Close() {
 
 func (db *DataBase) ConnectToDataBase() error {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", db.config.User, db.config.Password, db.config.Host, db.config.Port, db.config.Database)
-    conn, err := pgxpool.Connect(context.Background(),connStr)
+    conn, err := pgxpool.New(context.Background(),connStr)
     if err!=nil{
         return err
     }

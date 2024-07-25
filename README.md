@@ -1,4 +1,9 @@
 # Документация по проекту WB Weather Service
+## V2.0
+Внес правки по обновлению крафика погоды и улучшил работу сервиса в doker.
+Предстоящие изменения:
+- исправление ошибок с "=="
+- исправление момента с температурой: смена фарингейтов на цельсии
 
 ## Содержание
 1. [Введение](#введение)
@@ -46,14 +51,14 @@ cd WB_Weather_Service
 
 ```yaml
 server:
-  host: "localhost"
+  host: "0.0.0.0"
   port: "8080"
 
 repo:
     database: WB_developer
     user: mbatimel
     password: wb_il
-    host: "localhost"
+    host: "postgres"
     port: "5432"
 ```
 

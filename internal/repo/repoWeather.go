@@ -21,17 +21,20 @@ const (
 )
 
 func (db *DataBase) InitializeCities() error {
-	cityNames := []string{"London", "Paris", "Berlin", "New York", "Tokyo","Moscow","Saint-Petersburg", "Kazan", "Chelyabinsk", "Novosibirsk","Ekaterinburg","Samara","Omsk","Edinburgh","Cardiff","Belfast","Glasgow", "Manchester","Liverpool","Oslo"}
+	cityNames := []string{"London", "Paris", "Berlin", "Sergach", "Tokyo","Moscow","Saint-Petersburg", "Kazan", "Chelyabinsk", "Novosibirsk","Ekaterinburg","Samara","Omsk","Edinburgh","Cardiff","Belfast","Glasgow", "Manchester","Liverpool","Oslo"}
 
 	for _, cityName := range cityNames {
 		url := fmt.Sprintf("%s?q=%s&limit=1&appid=%s", geocodingAPIURL, cityName, openWeatherAPIKey)
 		resp, err := http.Get(url)
+        log.Printf("Requesting URL %s", url)
 		if err != nil {
 			return fmt.Errorf("failed to fetch city data: %w", err)
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
+        if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			log.Printf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
 			return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 		}
 
@@ -60,8 +63,8 @@ func (db *DataBase) InitializeCities() error {
         var exists bool
         err = db.DB.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM cities WHERE name=$1)", cityName).Scan(&exists)
         if err != nil {
-            return err
-        }
+			return fmt.Errorf("failed to check existence for city %s: %w", cityName, err)
+		}
             if !exists {
             query := `INSERT INTO cities (name, country, latitude, longitude) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
             _, err = db.DB.Exec(context.Background(), query, city.Name, city.Country, city.Latitude, city.Longitude)
@@ -138,45 +141,25 @@ func (db *DataBase) updateWeatherForCity(city model.Cities) error {
     if err != nil {
         return fmt.Errorf("failed to read response body: %w", err)
     }
+    var weatherResponse struct {
+        List []model.WeatherUnit `json:"list"`
+    }
 
-    weatherData := make(map[string]interface{})
-    err = json.Unmarshal(body, &weatherData)
+    err = json.Unmarshal(body, &weatherResponse)
     if err != nil {
         return fmt.Errorf("failed to unmarshal weather data: %w", err)
     }
 
-    forecastList, ok := weatherData["list"].([]interface{})
-    if !ok {
-        return fmt.Errorf("unexpected format for weather data")
-    }
-
-    for _, forecast := range forecastList {
-        forecastMap, ok := forecast.(map[string]interface{})
-        if !ok {
-            return fmt.Errorf("unexpected format for forecast map")
-        }
-
-        mainData, ok := forecastMap["main"].(map[string]interface{})
-        if !ok {
-            return fmt.Errorf("unexpected format for main data")
-        }
-
-        forecastTime, ok := forecastMap["dt_txt"].(string)
-        if !ok {
-            return fmt.Errorf("unexpected format for forecast time")
-        }
-
-        temp, ok := mainData["temp"].(float64)
-        if !ok {
-            return fmt.Errorf("unexpected format for temperature")
-        }
+    for _, forecast := range weatherResponse.List {
+        temp := forecast.Main.Temp
+        forecastTime := forecast.DtTxt
 
         date, err := time.Parse("2006-01-02 15:04:05", forecastTime)
         if err != nil {
             return fmt.Errorf("failed to parse date: %w", err)
         }
 
-        weatherBytes, err := json.Marshal(forecastMap)
+        weatherBytes, err := json.Marshal(forecast)
         if err != nil {
             return fmt.Errorf("failed to marshal weather data: %w", err)
         }
@@ -195,3 +178,4 @@ func (db *DataBase) updateWeatherForCity(city model.Cities) error {
 
     return nil
 }
+

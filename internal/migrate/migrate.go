@@ -30,6 +30,9 @@ func ApplyMigrations(db *repo.DataBase, filePath string) error {
 }
 
 func checkingTables(db *repo.DataBase) bool{
+	if db.DB == nil {
+		return false
+	}
 		query := `
 		SELECT EXISTS (
 			SELECT FROM information_schema.tables 
